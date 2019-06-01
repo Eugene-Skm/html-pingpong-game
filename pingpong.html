@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Ball!</title>
+    <link rel="stylesheet" href="st.css">
+    <script type="text/javascript">
+        var canvas; //canvas設定
+        var ctx; //canvas設定
+        var width; //canvas width
+        var height; //canvas height
+
+        /*-----------*/
+        var plateX; //プレイヤー板の位置X
+        var plateY; //プレイヤー板の位置Y
+        var plateY2; //プレイヤー板の位置Y（固定用）
+        var plateLength = 80; //板の長さ
+        var platecenter; //板の中心値
+        var mouseX; //マウス位置X
+        var mouseY; //マウス位置Y
+        var delay = 1; //マウス遅延量
+        var flg = 0; //ボール描画間隔合わせ
+        platecenter = plateLength / 2;
+
+        /*------------------*/
+
+        
+        /*------------------*/
+
+
+        var locX = 200; //現在のボール位置X
+        var locY = 150; //現在のボール位置Y
+        var clocX = 0; //現在(元の)のボール位置X
+        var clocY = 0; //現在(元の)のボール位置Y   位置更新時の比較用に使用
+        var originplaceX; //板の現在位置X　　　    板の移動スピード算出用
+        var currentplaceX; //板の現在位置X　　　    板の移動スピード算出用
+        var platespeed; //板のスピード
+        var nowspeed = 0; //板のスピード          板とボールの接触時に取得
+        var degree = Math.floor(Math.random() * (70 - 20) + 20); //ボールの移動角度
+        var radian; //移動角度算出用ラジアン
+        var ballspeed = 0; //ボールのスピード
+        /*------------------*/
+        var outwidth = 100; //アウトになる範囲の長さ　初期
+        var outpfig = 2; //アウトになるプレートの数＋１
+        var pointwidth = 600;
+
+        var score = 0;
+        var chain = 1;
+        var setgame;
+        var msecond = 0;
+        var second = 0;
+        var minuts = 0;
+        var pointX = [];
+        var pointY = [];
+        var color = [];
+        var ballcolor = 0;
+        var time = "";
+        var ballnum = "";
+        var HighScore = 0;
+
+        function initual() {
+            locX = 200; //現在のボール位置X
+            locY = 150;
+            clocX = 0; //現在(元の)のボール位置X
+            clocY = 0; //現在(元の)のボール位置Y   位置更新時の比較用に使用
+            msecond = 0;
+            second = 0;
+            minuts = 0;
+            pointX = [];
+            pointY = [];
+            color = [];
+            outwidth = 100; //アウトになる範囲の長さ　初期
+            outpfig = 2; //アウトになるプレートの数＋１
+            pointwidth = 600;
+        }
+
+        function initialize() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            width = ctx.canvas.width;
+            height = ctx.canvas.height;
+
+
+            // 板の初期位置
+            plateX = mouseX = width / 2;
+            plateY = mouseY = height - 50;
+            plateY2 = mouseY = height - 50;
+            originplaceX = plateX;
+        }
+        var scrollOff = function(e) {
+            e.preventDefault();
+        }
+        // スクロールをキャンセル
+        document.addEventListener('touchmove', scrollOff, false);
+        //removeEventListenerで「スクロールをキャンセル」をキャンセル
+        //document.removeEventListener( 'touchmove', scrollOff, false );
+
+        window.addEventListener("load", function(event) {
+            var touchStartX;
+            var touchStartY;
+            var touchMoveX;
+            var touchMoveY;
+
+            // 移動時
+            window.addEventListener("touchmove", function(event) {
+                event.preventDefault();
+                var rect = event.target.getBoundingClientRect();
+                // 座標の取得
+                mouseX = event.changedTouches[0].pageX - rect.left - platecenter;
+                mouseY = event.changedTouches[0].pageY;
+            }, false);
+
+        }, false);
+
+        // マウス座標の更新
+        function getMousePosition(e) {
+            var rect = e.target.getBoundingClientRect();
+            mouseX = Math.floor(e.clientX - rect.left - platecenter);
+            mouseY = Math.floor(e.clientY - rect.top);
+        }
+
+        function startgame() {
+            canvas.addEventListener('mousemove', getMousePosition, false);
+            delay = parseInt(document.getElementById("delay").value);
+            ballnum = parseInt(document.getElementById("banu").value);
+            ballspeed = 15 / 10;
+            document.getElementById("delay").disabled = "disabled";
+            document.getElementById("start").disabled = "disabled";
+            setback();
+            setgame = setInterval(drawplate, 0);
+            setInterval(getmousespeed, 0);
+            setInterval(timer, 10);
+        }
+        /*-------------------------------------------------------------*/
+        function drawplate() {
+            plateX = (mouseX + delay * plateX) / (delay + 1);
+            plateY = ((mouseY + delay * plateY) / (delay + 1)) - ((mouseY + delay * plateY) / (delay + 1)) % 3;
+            plateY2 = height - 80;
+            /*--------------------------板の描画設定-----------------------------------*/
+            ctx.save();
+
+            ctx.fillStyle = "rgb(0,0,0)";
+            ctx.fillRect(0, 0, 800, 800);
+
+            scorechange();
+
+            // 板の描画設定
+            ctx.beginPath();
+            ctx.strokeStyle = 'hsl(180,0%,100%)';
+            ctx.strokeRect((800 - pointwidth) / 2, 0, pointwidth, 3);
+            ctx.strokeRect(plateX, plateY2, plateLength, 3);
+            ctx.closePath();
+
+
+            drawoutwidth();
+
+            ctx.beginPath();
+            ctx.fillStyle = 'rgb(0,0,0)';
+            ctx.translate(10, 30);
+
+            ctx.fill();
+            ctx.closePath();
+
+
+            // 描画実行
+            ctx.stroke();
+            ctx.restore();
+
+            backgroundst();
+
+
+            flg += 0.5;
+            if (flg == 4) {
+
+                clocY = locY;
+                if ((locX >= plateX && locX <= plateX + plateLength) && (locY >= plateY2 - 4 && locY <= plateY2 + 4)) {
+                    if (platespeed !== 0) {
+                        nowspeed = platespeed;
+                    }
+
+                    degree = degree - (nowspeed * 10);
+                    degree = (180 - degree);
+                    if (degree >= 360 || degree <= 360) {
+                        degree = degree % 360;
+                    }
+
+                    if (degree > 75 && degree < 180) {
+                        degree = 75;
+                    } else if (degree < 285 && degree > 180) {
+                        degree = 285;
+                    } else if (degree > -75 && degree < -180) {
+                        degree = -75;
+                    } else if (degree < -285 && degree > -180) {
+                        degree = -285;
+                    }
+                    score += 5;
+
+                }
+                for (var c in pointX) {
+                    if ((locX >= pointX[c] - 6 && locX <= pointX[c] + 6) && (locY >= pointY[c] - 6 && locY <= pointY[c] + 6)) {
+                        pointX.splice(c, 1);
+                        pointY.splice(c, 1);
+                        color.splice(c, 1);
+                        score += 50;
+                        ballnum--;
+                        if (ballnum == 0) {
+                            setTimeout(function() {
+                                End("Game Clear!!", score)
+                            }, 100);
+
+                        }
+                    }
+                }
+                if (locX < 0 || locX > 800) {
+                    degree *= -1;
+                    chain = 1;
+                }
+                if (locY <= 0) {
+                    pointcheck();
+                }
+                if (locY > 800) {
+                    outcheck();
+                    chain = 1;
+                }
+
+                if (locY < 0 || locY > 800) {
+                    degree = (180 - degree);
+                }
+                flg = 0;
+            }
+
+
+            draw();
+            ctx.restore();
+        }
+
+        function draw() {
+            radian = (degree - 90) * Math.PI / 180;
+            locX = clocX + Math.cos(radian) * ballspeed;
+            locY = clocY + Math.sin(radian) * ballspeed;
+            clocX = locX;
+            clocY = locY;
+            ctx.beginPath();
+            ctx.fillStyle = '#000000';
+
+            ballcolor += 0.5;
+            ctx.fillStyle = 'hsl(' + ballcolor + ',100%,50%)';
+            ctx.arc(locX, locY, 5, 0, Math.PI * 2.0, true);
+
+            ctx.fill();
+            if (ballcolor == 360) {
+                ballcolor = 0;
+            }
+        }
+
+        function drawoutwidth() {
+            ctx.fillStyle = 'rgba(255, 0, 0,0.5)';
+            if (outwidth >= 124) {
+                ctx.fillRect(0, 780, 800, 20);
+            } else {
+                for (var t = 1; t < outpfig; t++) {
+                    var stpoint = (width / outpfig) * t - (outwidth / 2);
+                    ctx.fillRect(stpoint, 780, outwidth, 20);
+                }
+            }
+        }
+
+        function pointcheck() {
+            if ((locX >= (800 - pointwidth) / 2) && locX <= (800 - pointwidth) / 2 + pointwidth) {
+                score += (10 * chain);
+                chain += 1;
+            }
+        }
+
+        function outcheck() {
+            if (outwidth >= 124) {
+                if (locY >= 800) {
+
+                    End("Game Over", score);
+                }
+            } else {
+                for (var t = 1; t < outpfig; t++) {
+                    var st = (width / outpfig) * t - (outwidth / 2);
+                    if ((locX >= st) && locX <= st + outwidth) {
+                        End("Game Over", score);
+                    }
+                }
+            }
+        }
+
+        function End(strings, sc) {
+            clearInterval(timer);
+            clearInterval(setgame);
+
+            setTimeout(
+                function() {
+                    if (score > HighScore) {
+                        HighScore = score;
+                    }
+                    ctx.clearRect(0, 0, 800, 800);
+                    ctx.font = "italic  bold  70px 'Helvetica'";
+                    ctx.fillText(strings, 50, 300, 800);
+                    ctx.font = "italic  bold  40px 'Helvetica'";
+                    ctx.fillText("HighScore:" + HighScore, 50, 370, 800);
+
+                    score = 0;
+                    document.getElementById("start").disabled = "";
+                    initual();
+                }, 1000);
+
+        }
+
+
+        function scorechange() {
+            //var section2node2 = document.getElementById('scorep');
+            //section2node2.innerHTML = score;
+
+            ctx.font = "italic  bold  100px 'Helvetica'";
+            var fs = Math.floor(ctx.measureText(score).width / 2);
+            ctx.fillStyle = "rgba(0,0,0,0.5)"
+            ctx.fillStyle = "#0000ff"
+            ctx.fillText(score, (400 - fs), 300);
+
+            ctx.font = "italic  bold  40px 'Helvetica'";
+            time = minuts + ":" + second + ":" + msecond;
+            var fs1 = Math.floor(ctx.measureText(time).width / 2);
+            ctx.fillText(time, (400 - fs1), 400);
+
+        }
+
+        function backgroundst() {
+
+
+            for (var y in pointX) {
+                ctx.beginPath();
+                switch (color[y]) {
+                    case 1:
+                        ctx.strokeStyle = 'hsl(110,100%,50%)';
+                        break;
+                    case 2:
+                        ctx.strokeStyle = 'hsl(60,100%,50%)';
+                        break;
+                    case 3:
+                        ctx.strokeStyle = 'hsl(60,100%,100%)';
+                        break;
+                    case 4:
+                        ctx.strokeStyle = 'hsl(10,100%,50%)';
+                        break;
+                    case 5:
+                        ctx.strokeStyle = 'hsl(180,100%,50%)';
+                        break;
+                }
+                ctx.arc(pointX[y], pointY[y], 4, 0, Math.PI * 2, false);
+                ctx.stroke();
+            }
+            ctx.closePath();
+
+
+            /*-----------------------------------------------------------------------*/
+        }
+
+        function setback() {
+            console.log(ballnum);
+            for (var g = 0; g < ballnum; g++) {
+                pointX[g] = Math.floor(Math.random() * 800);
+                pointY[g] = Math.floor(Math.random() * 600);
+                color[g] = Math.floor(Math.random() * 5)
+            }
+        }
+
+        /*------------------------------------------------------------*/
+
+        function getmousespeed() {
+            currentplaceX = plateX;
+            platespeed = originplaceX - currentplaceX;
+            originplaceX = currentplaceX;
+        }
+        /*------------------------------------------------------------*/
+        function timer() {
+
+            if (msecond == 100) {
+                second++;
+                msecond = 0;
+
+                if (second % 20 == 0 && outwidth <= 124) {
+                    outwidth += 2;
+                } else if (second % 30 == 0 && outpfig <= 6) {
+                    outpfig++;
+                } else if (second==60) {
+                    ballspeed += 1;
+                }
+                if (second % 10 == 0 && pointwidth >= 60) {
+                    pointwidth -= 20;
+                }
+                if (second % 5 == 0) {
+                    score++;
+                }
+            }
+            if (second == 60) {
+                minuts++;
+                second = 0;
+            }
+
+            msecond++;
+        }
+        /*------------------------------------------------------------*/
+        // 初期化
+        window.addEventListener('load', initialize, false);
+    </script>
+    <style type="text/css">
+        canvas {
+            background-color: #000;
+            border: 1px solid #999;
+        }
+    </style>
+</head>
+
+<body>
+    <center>
+        <div id="canva" width="800" height="800">
+            <canvas id="canvas" width="800" height="800"></canvas>
+        </div>
+        <form>
+
+            ボールの数
+            <input type="number" id="banu" value="50" min="1" max="5000" step="1"> マウス追従速度
+            <input type="number" id="delay" value="20" min="0" max="100" step="1"><br>
+            <input type="button" id="start" value="start" onclick="startgame()">
+        </form>
+    </center>
+    Copyright (C) 2018-2019 Yujin Sakuna. All Rights Reserved.
+</body>
+
+</html>
